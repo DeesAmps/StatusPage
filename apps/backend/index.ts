@@ -6,10 +6,34 @@ import { generateToken, authenticateToken } from './auth';
 import { prisma } from './prismaClient';
 import { findAuthByEmail, addAuthAndUser } from './userStore';
 import { Company, CompanyStatus, getCompaniesByUser, addCompany } from './companyStore';
+import Parser from 'rss-parser';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+const rssParser = new Parser();
+
+async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{ status: string; lastChecked: Date }> {
+  try {
+    const feed = await rssParser.parseURL(statusPageUrl);
+    // Heuristic: if any item title or content contains 'down', 'incident', or 'degraded', mark as down/partial
+    let status: string = 'up';
+    for (const item of feed.items) {
+      const text = `${item.title || ''} ${item.content || ''}`.toLowerCase();
+      if (text.includes('fully down') || text.includes('major outage')) {
+        status = 'fully_down';
+        break;
+      } else if (text.includes('partial') || text.includes('degraded') || text.includes('incident')) {
+        status = 'partially_down';
+      }
+    }
+    return { status, lastChecked: new Date() };
+  } catch (e) {
+    // If RSS fetch fails, mark as partially_down
+    return { status: 'partially_down', lastChecked: new Date() };
+  }
+}
 
 app.get('/', (req, res) => {
   res.send('StatusPage backend is running!');
@@ -59,14 +83,15 @@ app.post('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
   const { name, statusPageUrl } = req.body;
   if (!name || !statusPageUrl) return res.status(400).json({ error: 'Name and statusPageUrl required' });
-  // Placeholder: always set status to 'up' and lastChecked to now
+  // Fetch status from RSS
+  const { status, lastChecked } = await fetchCompanyStatusFromRSS(statusPageUrl);
   const company = {
     id: uuidv4(),
     userId,
     name,
-    status: 'up',
+    status,
     statusPageUrl,
-    lastChecked: new Date(),
+    lastChecked,
   };
   const created = await addCompany(company);
   res.json(created);
