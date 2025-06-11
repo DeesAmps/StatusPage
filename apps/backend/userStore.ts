@@ -1,16 +1,12 @@
-// Simple in-memory user store for demo; replace with DB in production
-export interface User {
-  id: string;
-  email: string;
-  passwordHash: string;
+import { prisma } from './prismaClient';
+
+export async function findAuthByEmail(email: string) {
+  return prisma.auth.findUnique({ where: { email } });
 }
 
-export const users: User[] = [];
-
-export function findUserByEmail(email: string) {
-  return users.find(u => u.email === email);
-}
-
-export function addUser(user: User) {
-  users.push(user);
+export async function addAuthAndUser(email: string, passwordHash: string) {
+  // Create user first, then auth
+  const user = await prisma.user.create({ data: {} });
+  const auth = await prisma.auth.create({ data: { email, passwordHash, userId: user.id } });
+  return { user, auth };
 }

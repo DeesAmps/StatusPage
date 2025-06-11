@@ -3,7 +3,8 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { generateToken, authenticateToken } from './auth';
-import { users, findUserByEmail, addUser } from './userStore';
+import { prisma } from './prismaClient';
+import { findAuthByEmail, addAuthAndUser } from './userStore';
 import { Company, CompanyStatus, getCompaniesByUser, addCompany } from './companyStore';
 
 const app = express();
@@ -18,51 +19,57 @@ app.get('/', (req, res) => {
 app.post('/api/register', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-  if (findUserByEmail(email)) return res.status(409).json({ error: 'User already exists' });
+  // Check if auth already exists
+  const existingAuth = await findAuthByEmail(email);
+  if (existingAuth) return res.status(409).json({ error: 'User already exists' });
+  // Create user and auth
   const passwordHash = await bcrypt.hash(password, 10);
-  const user = { id: uuidv4(), email, passwordHash };
-  addUser(user);
-  const token = generateToken({ id: user.id, email: user.email });
+  const { user } = await addAuthAndUser(email, passwordHash);
+  const token = generateToken({ id: user.id, email });
   res.json({ token });
 });
 
 // Login endpoint
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
-  const user = findUserByEmail(email);
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
-  const valid = await bcrypt.compare(password, user.passwordHash);
+  const auth = await findAuthByEmail(email);
+  if (!auth) return res.status(401).json({ error: 'Invalid credentials' });
+  const valid = await bcrypt.compare(password, auth.passwordHash);
   if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
-  const token = generateToken({ id: user.id, email: user.email });
+  const token = generateToken({ id: auth.userId, email: auth.email });
   res.json({ token });
 });
 
 // Example protected route
-app.get('/api/me', authenticateToken, (req, res) => {
-  res.json({ user: (req as any).user });
+app.get('/api/me', authenticateToken, async (req, res) => {
+  // Only return user id and email, not passwordHash
+  const userId = (req as any).user.id;
+  const auth = await prisma.auth.findFirst({ where: { userId } });
+  res.json({ user: { id: userId, email: auth?.email } });
 });
 
 // --- Company endpoints ---
-app.get('/api/companies', authenticateToken, (req, res) => {
+app.get('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
-  res.json(getCompaniesByUser(userId));
+  const companies = await getCompaniesByUser(userId);
+  res.json(companies);
 });
 
-app.post('/api/companies', authenticateToken, (req, res) => {
+app.post('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
   const { name, statusPageUrl } = req.body;
   if (!name || !statusPageUrl) return res.status(400).json({ error: 'Name and statusPageUrl required' });
   // Placeholder: always set status to 'up' and lastChecked to now
-  const company: Company = {
+  const company = {
     id: uuidv4(),
     userId,
     name,
     status: 'up',
     statusPageUrl,
-    lastChecked: new Date().toISOString(),
+    lastChecked: new Date(),
   };
-  addCompany(company);
-  res.json(company);
+  const created = await addCompany(company);
+  res.json(created);
 });
 
 const PORT = process.env.PORT || 4000;

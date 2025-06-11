@@ -1,3 +1,5 @@
+import { prisma } from './prismaClient';
+
 export type CompanyStatus = 'up' | 'partially_down' | 'fully_down';
 
 export interface Company {
@@ -9,13 +11,17 @@ export interface Company {
   lastChecked: string;
 }
 
-const companies: Company[] = [];
-
-export function getCompaniesByUser(userId: string) {
-  return companies.filter(c => c.userId === userId);
+export async function getCompaniesByUser(userId: string) {
+  return prisma.company.findMany({ where: { userId } });
 }
 
-export function addCompany(company: Company) {
-  companies.push(company);
-  return company;
+export async function addCompany(company: {
+  id: string;
+  userId: string;
+  name: string;
+  status: string;
+  statusPageUrl: string;
+  lastChecked: Date;
+}) {
+  return prisma.company.create({ data: company });
 }
