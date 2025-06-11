@@ -1,34 +1,79 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState, useEffect } from 'react'
 import './App.css'
+import { register, login, getMe } from './api'
+import Dashboard from './Dashboard'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'))
+  const [error, setError] = useState('')
+  const [user, setUser] = useState<{ email: string } | null>(null)
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    try {
+      const fn = mode === 'login' ? login : register
+      const res = await fn(email, password)
+      setToken(res.token)
+      localStorage.setItem('token', res.token)
+      const me = await getMe(res.token)
+      setUser(me.user)
+    } catch (err) {
+      setError((err as Error).message)
+    }
+  }
+
+  const handleLogout = () => {
+    setToken(null)
+    setUser(null)
+    localStorage.removeItem('token')
+  }
+
+  // Fetch user if token exists
+  useEffect(() => {
+    if (token) {
+      getMe(token).then(me => setUser(me.user)).catch(() => handleLogout())
+    }
+  }, [token])
+
+  if (user) {
+    return (
+      <div className="authed">
+        <h2>Welcome, {user.email}</h2>
+        <button onClick={handleLogout}>Logout</button>
+        <Dashboard token={token!} />
+      </div>
+    )
+  }
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="auth-container">
+      <h2>{mode === 'login' ? 'Login' : 'Register'}</h2>
+      <form onSubmit={handleAuth}>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+        />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={e => setPassword(e.target.value)}
+          required
+        />
+        <button type="submit">{mode === 'login' ? 'Login' : 'Register'}</button>
+      </form>
+      <button onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
+        {mode === 'login' ? 'Need an account? Register' : 'Already have an account? Login'}
+      </button>
+      {error && <div className="error">{error}</div>}
+    </div>
   )
 }
 
