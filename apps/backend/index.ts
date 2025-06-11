@@ -79,6 +79,22 @@ app.get('/api/companies', authenticateToken, async (req, res) => {
   res.json(companies);
 });
 
+// Refresh all company statuses (for cron job)
+app.post('/api/refresh-status', async (req, res) => {
+  // Optionally, add a secret or API key check here for security
+  const companies = await prisma.company.findMany();
+  let updated = 0;
+  for (const company of companies) {
+    const { status, lastChecked } = await fetchCompanyStatusFromRSS(company.statusPageUrl);
+    await prisma.company.update({
+      where: { id: company.id },
+      data: { status, lastChecked },
+    });
+    updated++;
+  }
+  res.json({ updated });
+});
+
 app.post('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
   const { name, statusPageUrl } = req.body;

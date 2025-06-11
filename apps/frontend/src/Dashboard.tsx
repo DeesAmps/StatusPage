@@ -17,10 +17,13 @@ interface DashboardProps {
   token: string;
 }
 
+type AddMethod = 'rss' | 'scrape';
+
 export default function Dashboard({ token }: DashboardProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
+  const [addMethod, setAddMethod] = useState<AddMethod>('rss');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -42,7 +45,7 @@ export default function Dashboard({ token }: DashboardProps) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, statusPageUrl: url }),
+        body: JSON.stringify({ name, statusPageUrl: url, method: addMethod }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to add');
       const company = await res.json();
@@ -67,11 +70,15 @@ export default function Dashboard({ token }: DashboardProps) {
         />
         <input
           type="url"
-          placeholder="Status Page URL"
+          placeholder={addMethod === 'rss' ? 'Status Page RSS Feed URL' : 'Status Page URL'}
           value={url}
           onChange={e => setUrl(e.target.value)}
           required
         />
+        <select value={addMethod} onChange={e => setAddMethod(e.target.value as AddMethod)}>
+          <option value="rss">RSS Feed</option>
+          <option value="scrape">Page Scrape</option>
+        </select>
         <button type="submit">Add</button>
       </form>
       {error && <div className="error">{error}</div>}
