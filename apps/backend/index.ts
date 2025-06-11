@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 import { generateToken, authenticateToken } from './auth';
 import { users, findUserByEmail, addUser } from './userStore';
+import { Company, CompanyStatus, getCompaniesByUser, addCompany } from './companyStore';
 
 const app = express();
 app.use(cors());
@@ -39,6 +40,29 @@ app.post('/api/login', async (req, res) => {
 // Example protected route
 app.get('/api/me', authenticateToken, (req, res) => {
   res.json({ user: (req as any).user });
+});
+
+// --- Company endpoints ---
+app.get('/api/companies', authenticateToken, (req, res) => {
+  const userId = (req as any).user.id;
+  res.json(getCompaniesByUser(userId));
+});
+
+app.post('/api/companies', authenticateToken, (req, res) => {
+  const userId = (req as any).user.id;
+  const { name, statusPageUrl } = req.body;
+  if (!name || !statusPageUrl) return res.status(400).json({ error: 'Name and statusPageUrl required' });
+  // Placeholder: always set status to 'up' and lastChecked to now
+  const company: Company = {
+    id: uuidv4(),
+    userId,
+    name,
+    status: 'up',
+    statusPageUrl,
+    lastChecked: new Date().toISOString(),
+  };
+  addCompany(company);
+  res.json(company);
 });
 
 const PORT = process.env.PORT || 4000;
