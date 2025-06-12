@@ -7,8 +7,6 @@ import { prisma } from './prismaClient';
 import { findAuthByEmail, addAuthAndUser } from './userStore';
 import { Company, CompanyStatus, getCompaniesByUser, addCompany } from './companyStore';
 import Parser from 'rss-parser';
-import fetch from 'node-fetch';
-import cheerio from 'cheerio';
 
 const app = express();
 app.use(cors());
@@ -37,10 +35,16 @@ async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{ statu
   }
 }
 
+// Use dynamic import for node-fetch (ESM only)
+let fetch: typeof import('node-fetch').default;
 async function fetchCompanyStatusByScrape(statusPageUrl: string): Promise<{ status: string; lastChecked: Date }> {
   try {
+    if (!fetch) {
+      fetch = (await import('node-fetch')).default;
+    }
     const res = await fetch(statusPageUrl);
     const html = await res.text();
+    const cheerio = (await import('cheerio')).default;
     const $ = cheerio.load(html);
     // Heuristic: look for keywords in the page text
     const text = $('body').text().toLowerCase();
