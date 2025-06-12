@@ -117,18 +117,27 @@ export default function Dashboard({ token }: DashboardProps) {
 
   return (
   <div
-    className="dashboard"
     style={{
-      maxWidth: "none",
-      width: "100vw",
-      padding: "2.5rem 4vw",
-      boxSizing: "border-box",
-      background: "linear-gradient(120deg, #23263a 60%, #181a20 100%)",
-      minHeight: "100vh",
-      transition: "background 0.3s",
-      alignSelf: "center",
+      display: 'flex',
+      justifyContent: 'center',
+      background: '#181a20',
+      minHeight: '100vh',
+      padding: '2.5rem 0',
     }}
   >
+    <div
+      className="dashboard"
+      style={{
+        width: '100%',
+        maxWidth: 1200,           // ← cap the width so it doesn’t stretch too far
+        margin: '0 1rem',         // ← small side margin on tiny screens
+        padding: '2.5rem 4vw',
+        boxSizing: 'border-box',
+        background: 'linear-gradient(120deg, #23263a 60%, #181a20 100%)',
+        borderRadius: 8,
+        boxShadow: '0 2px 16px rgba(0,0,0,0.4)',
+      }}
+    >
     <h2
       style={{
         color: "#a18aff",
@@ -495,6 +504,7 @@ export default function Dashboard({ token }: DashboardProps) {
       </table>
     </div>
   </div>
+    </div>
 );
 
 
