@@ -17,13 +17,10 @@ interface DashboardProps {
   token: string;
 }
 
-type AddMethod = 'rss' | 'scrape';
-
 export default function Dashboard({ token }: DashboardProps) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [name, setName] = useState('');
   const [url, setUrl] = useState('');
-  const [addMethod, setAddMethod] = useState<AddMethod>('rss');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
 
@@ -50,7 +47,7 @@ export default function Dashboard({ token }: DashboardProps) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ name, statusPageUrl: url, method: addMethod }),
+        body: JSON.stringify({ name, statusPageUrl: url, method: 'rss' }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to add');
       const company = await res.json();
@@ -77,6 +74,20 @@ export default function Dashboard({ token }: DashboardProps) {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/companies/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to delete company');
+      setCompanies(prev => prev.filter(c => c.id !== id));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  };
+
   return (
     <div className="dashboard">
       <h2>Monitored Companies</h2>
@@ -93,15 +104,11 @@ export default function Dashboard({ token }: DashboardProps) {
         />
         <input
           type="url"
-          placeholder={addMethod === 'rss' ? 'Status Page RSS Feed URL' : 'Status Page URL'}
+          placeholder="Status Page RSS Feed URL"
           value={url}
           onChange={e => setUrl(e.target.value)}
           required
         />
-        <select value={addMethod} onChange={e => setAddMethod(e.target.value as AddMethod)}>
-          <option value="rss">RSS Feed</option>
-          <option value="scrape">Page Scrape</option>
-        </select>
         <button type="submit">Add</button>
       </form>
       {error && <div className="error">{error}</div>}
@@ -114,6 +121,7 @@ export default function Dashboard({ token }: DashboardProps) {
             <span>{company.name}</span>{' '}
             <a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a>{' '}
             <span style={{ fontSize: '0.8em', color: '#888' }}>Last checked: {company.lastChecked}</span>
+            <button onClick={() => handleDelete(company.id)} style={{ marginLeft: 8, background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>Remove</button>
             {company.latestIncidentTitle && (
               <div style={{ marginLeft: 32, marginTop: 4, textAlign: 'left', fontSize: '0.95em', color: '#a18aff' }}>
                 <strong>Latest Incident:</strong> {company.latestIncidentTitle}

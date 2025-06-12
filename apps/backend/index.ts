@@ -157,27 +157,36 @@ app.post('/api/refresh-status', async (req, res) => {
 
 app.post('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
-  const { name, statusPageUrl, method } = req.body;
+  const { name, statusPageUrl } = req.body;
   if (!name || !statusPageUrl) return res.status(400).json({ error: 'Name and statusPageUrl required' });
-  let statusInfo;
-  if (method === 'scrape') {
-    statusInfo = await fetchCompanyStatusByScrape(statusPageUrl);
-  } else {
-    statusInfo = await fetchCompanyStatusFromRSS(statusPageUrl);
-  }
-  const company: any = {
+  // Only RSS method is supported
+  const statusInfo = await fetchCompanyStatusFromRSS(statusPageUrl);
+  const company = {
     id: uuidv4(),
     userId,
     name,
     status: statusInfo.status,
     statusPageUrl,
     lastChecked: statusInfo.lastChecked,
+    latestIncidentTitle: statusInfo.latestIncidentTitle,
+    latestIncidentSummary: statusInfo.latestIncidentSummary,
+    latestIncidentAt: statusInfo.latestIncidentAt,
   };
-  if (statusInfo.latestIncidentTitle !== undefined) company.latestIncidentTitle = statusInfo.latestIncidentTitle;
-  if (statusInfo.latestIncidentSummary !== undefined) company.latestIncidentSummary = statusInfo.latestIncidentSummary;
-  if (statusInfo.latestIncidentAt !== undefined) company.latestIncidentAt = statusInfo.latestIncidentAt;
   const created = await addCompany(company);
   res.json(created);
+});
+
+// Add endpoint to delete a company by id (must belong to user)
+app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
+  const userId = (req as any).user.id;
+  const { id } = req.params;
+  // Only allow deleting companies owned by the user
+  const company = await prisma.company.findUnique({ where: { id } });
+  if (!company || company.userId !== userId) {
+    return res.status(404).json({ error: 'Company not found' });
+  }
+  await prisma.company.delete({ where: { id } });
+  res.json({ success: true });
 });
 
 const PORT = process.env.PORT || 4000;
