@@ -204,7 +204,7 @@ export default function Dashboard({ token }: DashboardProps) {
           width: '100%',
           borderCollapse: 'collapse',
           marginTop: 0,
-          minWidth: 900,
+          tableLayout: 'fixed', // Ensures columns fill container and align
         }}
       >
         <thead>
