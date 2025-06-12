@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { Company, CompanyStatus } from './dashboardTypes';
+import type { Company, CompanyStatus, CompanyHistory } from './dashboardTypes';
 import { API_URL } from './api';
 
 const statusColors: Record<CompanyStatus, string> = {
@@ -23,6 +23,9 @@ export default function Dashboard({ token }: DashboardProps) {
   const [url, setUrl] = useState('');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState<Record<string, boolean>>({});
+  const [history, setHistory] = useState<Record<string, CompanyHistory[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
 
   const fetchCompanies = useCallback(() => {
     fetch(`${API_URL}/companies`, {
@@ -57,6 +60,30 @@ export default function Dashboard({ token }: DashboardProps) {
     } catch (err) {
       setError((err as Error).message);
     }
+  };
+
+  const fetchHistory = async (companyId: string) => {
+    setHistoryLoading(h => ({ ...h, [companyId]: true }));
+    try {
+      const res = await fetch(`${API_URL}/companies/${companyId}/history`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to fetch history');
+      const data = await res.json();
+      setHistory(h => ({ ...h, [companyId]: data }));
+    } catch {
+      setHistory(h => ({ ...h, [companyId]: [] }));
+    } finally {
+      setHistoryLoading(h => ({ ...h, [companyId]: false }));
+    }
+  };
+
+  const toggleHistory = (companyId: string) => {
+    setHistoryOpen(open => {
+      const next = { ...open, [companyId]: !open[companyId] };
+      if (next[companyId] && !history[companyId]) fetchHistory(companyId);
+      return next;
+    });
   };
 
   const handleRefresh = async () => {
@@ -122,16 +149,38 @@ export default function Dashboard({ token }: DashboardProps) {
             <a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a>{' '}
             <span style={{ fontSize: '0.8em', color: '#888' }}>Last checked: {company.lastChecked}</span>
             <button onClick={() => handleDelete(company.id)} style={{ marginLeft: 8, background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>Remove</button>
-            {company.latestIncidentTitle && (
-              <div style={{ marginLeft: 32, marginTop: 4, textAlign: 'left', fontSize: '0.95em', color: '#a18aff' }}>
-                <strong>Latest Incident:</strong> {company.latestIncidentTitle}
-                {company.latestIncidentAt && (
-                  <span style={{ color: '#888', marginLeft: 8 }}>
-                    ({new Date(company.latestIncidentAt).toLocaleString()})
-                  </span>
-                )}
-                {company.latestIncidentSummary && (
-                  <div style={{ color: '#e6e6f7', marginTop: 2 }}>{company.latestIncidentSummary}</div>
+            <button onClick={() => toggleHistory(company.id)} style={{ marginLeft: 8, background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>
+              {historyOpen[company.id] ? 'Hide History' : 'Show History'}
+            </button>
+            {historyOpen[company.id] && (
+              <div style={{ marginTop: 8, marginLeft: 32, background: '#23263a', borderRadius: 6, padding: 8, boxShadow: '0 1px 4px #181a20' }}>
+                {historyLoading[company.id] ? (
+                  <div style={{ color: '#888' }}>Loading history...</div>
+                ) : history[company.id]?.length ? (
+                  <table style={{ width: '100%', fontSize: '0.95em', color: '#e6e6f7', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
+                        <th align="left">Time</th>
+                        <th align="left">Status</th>
+                        <th align="left">Incident</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {history[company.id].map(h => (
+                        <tr key={h.id} style={{ borderBottom: '1px solid #393c5a' }}>
+                          <td>{new Date(h.createdAt).toLocaleString()}</td>
+                          <td>{h.status}</td>
+                          <td>
+                            {h.incidentTitle && <div><strong>{h.incidentTitle}</strong></div>}
+                            {h.incidentSummary && <div>{h.incidentSummary}</div>}
+                            {h.incidentAt && <div style={{ color: '#888' }}>Incident Time: {new Date(h.incidentAt).toLocaleString()}</div>}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div style={{ color: '#888' }}>No history found.</div>
                 )}
               </div>
             )}

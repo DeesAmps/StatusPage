@@ -142,13 +142,23 @@ app.post('/api/refresh-status', async (req, res) => {
     const updateData: any = {
       status: statusInfo.status,
       lastChecked: statusInfo.lastChecked,
+      latestIncidentTitle: statusInfo.latestIncidentTitle,
+      latestIncidentSummary: statusInfo.latestIncidentSummary,
+      latestIncidentAt: statusInfo.latestIncidentAt,
     };
-    if (statusInfo.latestIncidentTitle !== undefined) updateData.latestIncidentTitle = statusInfo.latestIncidentTitle;
-    if (statusInfo.latestIncidentSummary !== undefined) updateData.latestIncidentSummary = statusInfo.latestIncidentSummary;
-    if (statusInfo.latestIncidentAt !== undefined) updateData.latestIncidentAt = statusInfo.latestIncidentAt;
     await prisma.company.update({
       where: { id: company.id },
       data: updateData,
+    });
+    // Record history
+    await prisma.companyHistory.create({
+      data: {
+        companyId: company.id,
+        status: statusInfo.status,
+        incidentTitle: statusInfo.latestIncidentTitle,
+        incidentSummary: statusInfo.latestIncidentSummary,
+        incidentAt: statusInfo.latestIncidentAt,
+      },
     });
     updated++;
   }
@@ -173,6 +183,16 @@ app.post('/api/companies', authenticateToken, async (req, res) => {
     latestIncidentAt: statusInfo.latestIncidentAt,
   };
   const created = await addCompany(company);
+  // Record initial history
+  await prisma.companyHistory.create({
+    data: {
+      companyId: company.id,
+      status: statusInfo.status,
+      incidentTitle: statusInfo.latestIncidentTitle,
+      incidentSummary: statusInfo.latestIncidentSummary,
+      incidentAt: statusInfo.latestIncidentAt,
+    },
+  });
   res.json(created);
 });
 
@@ -187,6 +207,21 @@ app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
   }
   await prisma.company.delete({ where: { id } });
   res.json({ success: true });
+});
+
+// Get status/incident history for a company (must belong to user)
+app.get('/api/companies/:id/history', authenticateToken, async (req, res) => {
+  const userId = (req as any).user.id;
+  const { id } = req.params;
+  const company = await prisma.company.findUnique({ where: { id } });
+  if (!company || company.userId !== userId) {
+    return res.status(404).json({ error: 'Company not found' });
+  }
+  const history = await prisma.companyHistory.findMany({
+    where: { companyId: id },
+    orderBy: { createdAt: 'desc' },
+  });
+  res.json(history);
 });
 
 const PORT = process.env.PORT || 4000;

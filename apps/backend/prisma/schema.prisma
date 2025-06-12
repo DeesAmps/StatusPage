@@ -32,4 +32,16 @@ model Company {
   latestIncidentAt      DateTime?
   user          User     @relation(fields: [userId], references: [id])
   userId        String
+  history       CompanyHistory[]
+}
+
+model CompanyHistory {
+  id            String   @id @default(uuid())
+  company       Company  @relation(fields: [companyId], references: [id])
+  companyId     String
+  status        String
+  incidentTitle String?
+  incidentSummary String?
+  incidentAt    DateTime?
+  createdAt     DateTime @default(now())
 }

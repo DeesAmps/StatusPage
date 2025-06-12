@@ -10,3 +10,13 @@ export interface Company {
   latestIncidentSummary?: string;
   latestIncidentAt?: string;
 }
+
+export interface CompanyHistory {
+  id: string;
+  companyId: string;
+  status: CompanyStatus | string;
+  incidentTitle?: string;
+  incidentSummary?: string;
+  incidentAt?: string;
+  createdAt: string;
+}
