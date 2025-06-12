@@ -209,6 +209,14 @@ app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
   res.json({ success: true });
 });
 
+// CORS preflight for DELETE /api/companies/:id
+app.options('/api/companies/:id', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
+  res.status(200).end();
+});
+
 // Get status/incident history for a company (must belong to user)
 app.get('/api/companies/:id/history', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;

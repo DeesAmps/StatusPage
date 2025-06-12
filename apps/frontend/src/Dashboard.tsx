@@ -139,53 +139,71 @@ export default function Dashboard({ token }: DashboardProps) {
         <button type="submit">Add</button>
       </form>
       {error && <div className="error">{error}</div>}
-      <ul className="company-list">
-        {companies.map(company => (
-          <li key={company.id} className="company-item">
-            <span style={{ color: statusColors[company.status], fontWeight: 'bold' }}>
-              {statusIcons[company.status]}
-            </span>{' '}
-            <span>{company.name}</span>{' '}
-            <a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a>{' '}
-            <span style={{ fontSize: '0.8em', color: '#888' }}>Last checked: {company.lastChecked}</span>
-            <button onClick={() => handleDelete(company.id)} style={{ marginLeft: 8, background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>Remove</button>
-            <button onClick={() => toggleHistory(company.id)} style={{ marginLeft: 8, background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>
-              {historyOpen[company.id] ? 'Hide History' : 'Show History'}
-            </button>
-            {historyOpen[company.id] && (
-              <div style={{ marginTop: 8, marginLeft: 32, background: '#23263a', borderRadius: 6, padding: 8, boxShadow: '0 1px 4px #181a20' }}>
-                {historyLoading[company.id] ? (
-                  <div style={{ color: '#888' }}>Loading history...</div>
-                ) : history[company.id]?.length ? (
-                  <table style={{ width: '100%', fontSize: '0.95em', color: '#e6e6f7', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
-                        <th align="left">Time</th>
-                        <th align="left">Status</th>
-                        <th align="left">Incident</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {history[company.id].map(h => (
-                        <tr key={h.id} style={{ borderBottom: '1px solid #393c5a' }}>
-                          <td>{new Date(h.createdAt).toLocaleString()}</td>
-                          <td>{h.status}</td>
-                          <td>
-                            {h.incidentTitle && <div><strong>{h.incidentTitle}</strong></div>}
-                            {h.incidentSummary && <div>{h.incidentSummary}</div>}
-                            {h.incidentAt && <div style={{ color: '#888' }}>Incident Time: {new Date(h.incidentAt).toLocaleString()}</div>}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div style={{ color: '#888' }}>No history found.</div>
-                )}
-              </div>
-            )}
-          </li>
-        ))}
+      <ul className="company-list" style={{ padding: 0 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 16 }}>
+          <thead>
+            <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
+              <th>Status</th>
+              <th>Company</th>
+              <th>Status Page</th>
+              <th>Last Checked</th>
+              <th>Actions</th>
+              <th>History</th>
+            </tr>
+          </thead>
+          <tbody>
+            {companies.map(company => (
+              <tr key={company.id} className="company-item" style={{ borderBottom: '1px solid #393c5a' }}>
+                <td style={{ color: statusColors[company.status], fontWeight: 'bold', textAlign: 'center' }}>
+                  {statusIcons[company.status]}
+                </td>
+                <td>{company.name}</td>
+                <td><a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a></td>
+                <td style={{ fontSize: '0.8em', color: '#888' }}>{company.lastChecked}</td>
+                <td>
+                  <button onClick={() => handleDelete(company.id)} style={{ background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginRight: 8 }}>Remove</button>
+                </td>
+                <td>
+                  <button onClick={() => toggleHistory(company.id)} style={{ background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>
+                    {historyOpen[company.id] ? 'Hide History' : 'Show History'}
+                  </button>
+                  {historyOpen[company.id] && (
+                    <div style={{ marginTop: 8, background: '#23263a', borderRadius: 6, padding: 8, boxShadow: '0 1px 4px #181a20', minWidth: 320 }}>
+                      {historyLoading[company.id] ? (
+                        <div style={{ color: '#888' }}>Loading history...</div>
+                      ) : history[company.id]?.length ? (
+                        <table style={{ width: '100%', fontSize: '0.95em', color: '#e6e6f7', borderCollapse: 'collapse' }}>
+                          <thead>
+                            <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
+                              <th align="left">Time</th>
+                              <th align="left">Status</th>
+                              <th align="left">Incident</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {history[company.id].map(h => (
+                              <tr key={h.id} style={{ borderBottom: '1px solid #393c5a' }}>
+                                <td>{new Date(h.createdAt).toLocaleString()}</td>
+                                <td>{h.status}</td>
+                                <td>
+                                  {h.incidentTitle && <div><strong>{h.incidentTitle}</strong></div>}
+                                  {h.incidentSummary && <div>{h.incidentSummary}</div>}
+                                  {h.incidentAt && <div style={{ color: '#888' }}>Incident Time: {new Date(h.incidentAt).toLocaleString()}</div>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <div style={{ color: '#888' }}>No history found.</div>
+                      )}
+                    </div>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </ul>
     </div>
   );
