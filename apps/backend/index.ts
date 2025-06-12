@@ -7,6 +7,8 @@ import { prisma } from './prismaClient';
 import { findAuthByEmail, addAuthAndUser } from './userStore';
 import { Company, CompanyStatus, getCompaniesByUser, addCompany } from './companyStore';
 import Parser from 'rss-parser';
+import fetch from 'node-fetch';
+import cheerio from 'cheerio';
 
 const app = express();
 app.use(cors());
@@ -31,6 +33,25 @@ async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{ statu
     return { status, lastChecked: new Date() };
   } catch (e) {
     // If RSS fetch fails, mark as partially_down
+    return { status: 'partially_down', lastChecked: new Date() };
+  }
+}
+
+async function fetchCompanyStatusByScrape(statusPageUrl: string): Promise<{ status: string; lastChecked: Date }> {
+  try {
+    const res = await fetch(statusPageUrl);
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    // Heuristic: look for keywords in the page text
+    const text = $('body').text().toLowerCase();
+    let status: string = 'up';
+    if (text.includes('fully down') || text.includes('major outage')) {
+      status = 'fully_down';
+    } else if (text.includes('partial') || text.includes('degraded') || text.includes('incident')) {
+      status = 'partially_down';
+    }
+    return { status, lastChecked: new Date() };
+  } catch (e) {
     return { status: 'partially_down', lastChecked: new Date() };
   }
 }
@@ -97,10 +118,15 @@ app.post('/api/refresh-status', async (req, res) => {
 
 app.post('/api/companies', authenticateToken, async (req, res) => {
   const userId = (req as any).user.id;
-  const { name, statusPageUrl } = req.body;
+  const { name, statusPageUrl, method } = req.body;
   if (!name || !statusPageUrl) return res.status(400).json({ error: 'Name and statusPageUrl required' });
-  // Fetch status from RSS
-  const { status, lastChecked } = await fetchCompanyStatusFromRSS(statusPageUrl);
+  let statusInfo;
+  if (method === 'scrape') {
+    statusInfo = await fetchCompanyStatusByScrape(statusPageUrl);
+  } else {
+    statusInfo = await fetchCompanyStatusFromRSS(statusPageUrl);
+  }
+  const { status, lastChecked } = statusInfo;
   const company = {
     id: uuidv4(),
     userId,
