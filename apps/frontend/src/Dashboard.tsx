@@ -116,113 +116,265 @@ export default function Dashboard({ token }: DashboardProps) {
   };
 
   return (
-    <div className="dashboard">
-      <h2>Monitored Companies</h2>
-      <button onClick={handleRefresh} disabled={refreshing} style={{ marginBottom: 16 }}>
-        {refreshing ? 'Refreshing...' : 'Manual Refresh'}
-      </button>
-      <form onSubmit={handleAdd} className="add-company-form">
-        <input
-          type="text"
-          placeholder="Company Name"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          required
-        />
-        <input
-          type="url"
-          placeholder="Status Page RSS Feed URL"
-          value={url}
-          onChange={e => setUrl(e.target.value)}
-          required
-        />
-        <button type="submit">Add</button>
-      </form>
-      {error && <div className="error">{error}</div>}
-      <div className="dashboard-table-wrapper" style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 16, minWidth: 900 }}>
-          <thead>
-            <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
-              <th style={{ textAlign: 'center' }}>Status</th>
-              <th>Company</th>
-              <th>Status Page</th>
-              <th>Last Checked</th>
-              <th>Latest Incident</th>
-              <th>Actions</th>
-              <th>History</th>
-            </tr>
-          </thead>
-          <tbody>
-            {companies.map(company => (
-              <tr key={company.id} className="company-item" style={{ borderBottom: '1px solid #393c5a' }}>
-                <td style={{ color: statusColors[company.status], fontWeight: 'bold', textAlign: 'center' }}>
-                  {statusIcons[company.status]}
-                </td>
-                <td>{company.name}</td>
-                <td><a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a></td>
-                <td style={{ fontSize: '0.8em', color: '#888' }}>{company.lastChecked}</td>
-                <td style={{ minWidth: 180 }}>
-                  {company.latestIncidentTitle ? (
-                    <div>
-                      <strong>{company.latestIncidentTitle}</strong>
-                      {company.latestIncidentAt && (
-                        <span style={{ color: '#888', marginLeft: 8 }}>
-                          ({new Date(company.latestIncidentAt).toLocaleString()})
-                        </span>
-                      )}
-                      {company.latestIncidentSummary && (
-                        <div style={{ color: '#e6e6f7', marginTop: 2 }}>{company.latestIncidentSummary}</div>
-                      )}
-                    </div>
-                  ) : (
-                    <span style={{ color: '#888' }}>No incidents</span>
-                  )}
-                </td>
-                <td>
-                  <button onClick={() => handleDelete(company.id)} style={{ background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginRight: 8 }}>Remove</button>
-                </td>
-                <td style={{ minWidth: 180 }}>
-                  <button onClick={() => toggleHistory(company.id)} style={{ background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginBottom: 4 }}>
-                    {historyOpen[company.id] ? 'Hide History' : 'Show History'}
-                  </button>
-                  {historyOpen[company.id] && (
-                    <div style={{ marginTop: 8, background: '#23263a', borderRadius: 6, padding: 8, boxShadow: '0 1px 4px #181a20', minWidth: 320 }}>
-                      {historyLoading[company.id] ? (
-                        <div style={{ color: '#888' }}>Loading history...</div>
-                      ) : history[company.id]?.length ? (
-                        <table style={{ width: '100%', fontSize: '0.95em', color: '#e6e6f7', borderCollapse: 'collapse' }}>
-                          <thead>
-                            <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
-                              <th align="left">Time</th>
-                              <th align="left">Status</th>
-                              <th align="left">Incident</th>
+  <div className="dashboard">
+    <h2>Monitored Companies</h2>
+
+    <button
+      onClick={handleRefresh}
+      disabled={refreshing}
+      style={{ marginBottom: 16 }}
+    >
+      {refreshing ? "Refreshing..." : "Manual Refresh"}
+    </button>
+
+    <form onSubmit={handleAdd} className="add-company-form">
+      <input
+        type="text"
+        placeholder="Company Name"
+        value={name}
+        onChange={e => setName(e.target.value)}
+        required
+      />
+      <input
+        type="url"
+        placeholder="Status Page RSS Feed URL"
+        value={url}
+        onChange={e => setUrl(e.target.value)}
+        required
+      />
+      <button type="submit">Add</button>
+    </form>
+
+    {error && <div className="error">{error}</div>}
+
+    <div
+      className="dashboard-table-wrapper"
+      style={{ overflowX: "auto" }}
+    >
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          marginTop: 16,
+          minWidth: 900
+        }}
+      >
+        <thead>
+          <tr
+            style={{
+              color: "#a18aff",
+              borderBottom: "1px solid #393c5a"
+            }}
+          >
+            <th style={{ textAlign: "center" }}>Status</th>
+            <th>Company</th>
+            <th>Status Page</th>
+            <th>Last Checked</th>
+            <th>Latest Incident</th>
+            <th>Actions</th>
+            <th>History</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {companies.map(company => (
+            <tr
+              key={company.id}
+              className="company-item"
+              style={{ borderBottom: "1px solid #393c5a" }}
+            >
+              <td
+                style={{
+                  color: statusColors[company.status],
+                  fontWeight: "bold",
+                  textAlign: "center"
+                }}
+              >
+                {statusIcons[company.status]}
+              </td>
+              <td>{company.name}</td>
+              <td>
+                <a
+                  href={company.statusPageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Status Page
+                </a>
+              </td>
+              <td
+                style={{
+                  fontSize: "0.8em",
+                  color: "#888"
+                }}
+              >
+                {company.lastChecked}
+              </td>
+              <td style={{ minWidth: 180 }}>
+                {company.latestIncidentTitle ? (
+                  <div>
+                    <strong>{company.latestIncidentTitle}</strong>
+                    {company.latestIncidentAt && (
+                      <span
+                        style={{
+                          color: "#888",
+                          marginLeft: 8
+                        }}
+                      >
+                        (
+                        {new Date(
+                          company.latestIncidentAt
+                        ).toLocaleString()}
+                        )
+                      </span>
+                    )}
+                    {company.latestIncidentSummary && (
+                      <div
+                        style={{
+                          color: "#e6e6f7",
+                          marginTop: 2
+                        }}
+                      >
+                        {company.latestIncidentSummary}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span style={{ color: "#888" }}>
+                    No incidents
+                  </span>
+                )}
+              </td>
+              <td>
+                <button
+                  onClick={() => handleDelete(company.id)}
+                  style={{
+                    background: "#ff6b81",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "0.3em 0.7em",
+                    cursor: "pointer",
+                    marginRight: 8
+                  }}
+                >
+                  Remove
+                </button>
+              </td>
+              <td style={{ minWidth: 180 }}>
+                <button
+                  onClick={() => toggleHistory(company.id)}
+                  style={{
+                    background: "#393c5a",
+                    color: "#a18aff",
+                    border: "none",
+                    borderRadius: 4,
+                    padding: "0.3em 0.7em",
+                    cursor: "pointer",
+                    marginBottom: 4
+                  }}
+                >
+                  {historyOpen[company.id]
+                    ? "Hide History"
+                    : "Show History"}
+                </button>
+
+                {historyOpen[company.id] && (
+                  <div
+                    style={{
+                      marginTop: 8,
+                      background: "#23263a",
+                      borderRadius: 6,
+                      padding: 8,
+                      boxShadow: "0 1px 4px #181a20",
+                      minWidth: 320
+                    }}
+                  >
+                    {historyLoading[company.id] ? (
+                      <div style={{ color: "#888" }}>
+                        Loading history...
+                      </div>
+                    ) : history[company.id]?.length ? (
+                      <table
+                        style={{
+                          width: "100%",
+                          fontSize: "0.95em",
+                          color: "#e6e6f7",
+                          borderCollapse: "collapse"
+                        }}
+                      >
+                        <thead>
+                          <tr
+                            style={{
+                              color: "#a18aff",
+                              borderBottom:
+                                "1px solid #393c5a"
+                            }}
+                          >
+                            <th align="left">Time</th>
+                            <th align="left">Status</th>
+                            <th align="left">Incident</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {history[company.id].map(h => (
+                            <tr
+                              key={h.id}
+                              style={{
+                                borderBottom:
+                                  "1px solid #393c5a"
+                              }}
+                            >
+                              <td>
+                                {new Date(
+                                  h.createdAt
+                                ).toLocaleString()}
+                              </td>
+                              <td>{h.status}</td>
+                              <td>
+                                {h.incidentTitle && (
+                                  <div>
+                                    <strong>
+                                      {h.incidentTitle}
+                                    </strong>
+                                  </div>
+                                )}
+                                {h.incidentSummary && (
+                                  <div>
+                                    {h.incidentSummary}
+                                  </div>
+                                )}
+                                {h.incidentAt && (
+                                  <div
+                                    style={{
+                                      color: "#888"
+                                    }}
+                                  >
+                                    Incident Time:{" "}
+                                    {new Date(
+                                      h.incidentAt
+                                    ).toLocaleString()}
+                                  </div>
+                                )}
+                              </td>
                             </tr>
-                          </thead>
-                          <tbody>
-                            {history[company.id].map(h => (
-                              <tr key={h.id} style={{ borderBottom: '1px solid #393c5a' }}>
-                                <td>{new Date(h.createdAt).toLocaleString()}</td>
-                                <td>{h.status}</td>
-                                <td>
-                                  {h.incidentTitle && <div><strong>{h.incidentTitle}</strong></div>}
-                                  {h.incidentSummary && <div>{h.incidentSummary}</div>}
-                                  {h.incidentAt && <div style={{ color: '#888' }}>Incident Time: {new Date(h.incidentAt).toLocaleString()}</div>}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      ) : (
-                        <div style={{ color: '#888' }}>No history found.</div>
-                      )}
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={{ color: "#888" }}>
+                        No history found.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
-  );
+  </div>
+);
+
 }
