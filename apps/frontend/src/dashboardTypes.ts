@@ -6,4 +6,7 @@ export interface Company {
   status: CompanyStatus;
   statusPageUrl: string;
   lastChecked: string;
+  latestIncidentTitle?: string;
+  latestIncidentSummary?: string;
+  latestIncidentAt?: string;
 }

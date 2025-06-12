@@ -27,6 +27,9 @@ model Company {
   status        String
   statusPageUrl String
   lastChecked   DateTime
+  latestIncidentTitle   String?
+  latestIncidentSummary String?
+  latestIncidentAt      DateTime?
   user          User     @relation(fields: [userId], references: [id])
   userId        String
 }

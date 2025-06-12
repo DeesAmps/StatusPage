@@ -45,28 +45,40 @@
   max-width: 600px;
   margin: 2rem auto;
   padding: 2rem;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  background: #23263a;
+  border-radius: 10px;
+  box-shadow: 0 2px 16px rgba(40,40,80,0.12);
+  color: #e6e6f7;
 }
 .add-company-form {
   display: flex;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
-.add-company-form input {
+.add-company-form input, .add-company-form select {
   flex: 1;
   padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  border: 1px solid #393c5a;
+  border-radius: 6px;
+  background: #181a20;
+  color: #e6e6f7;
+}
+.add-company-form input:focus, .add-company-form select:focus {
+  border-color: #a18aff;
+  outline: none;
 }
 .add-company-form button {
   padding: 0.5rem 1rem;
-  background: #007bff;
+  background: linear-gradient(90deg, #7c6fff 0%, #a18aff 100%);
   color: #fff;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.add-company-form button:hover {
+  background: linear-gradient(90deg, #a18aff 0%, #7c6fff 100%);
 }
 .company-list {
   list-style: none;
@@ -77,12 +89,15 @@
   align-items: center;
   gap: 1rem;
   padding: 0.5rem 0;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid #393c5a;
 }
 .company-item:last-child {
   border-bottom: none;
 }
 .error {
-  color: red;
+  color: #ff6b81;
   margin: 0.5rem 0;
+}
+.authed h2 {
+  color: #a18aff;
 }

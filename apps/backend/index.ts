@@ -14,11 +14,34 @@ app.use(express.json());
 
 const rssParser = new Parser();
 
-async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{ status: string; lastChecked: Date }> {
+async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{
+  status: string;
+  lastChecked: Date;
+  latestIncidentTitle?: string;
+  latestIncidentSummary?: string;
+  latestIncidentAt?: Date;
+}> {
   try {
     const feed = await rssParser.parseURL(statusPageUrl);
-    // Heuristic: if any item title or content contains 'down', 'incident', or 'degraded', mark as down/partial
     let status: string = 'up';
+    let latestIncidentTitle: string | undefined;
+    let latestIncidentSummary: string | undefined;
+    let latestIncidentAt: Date | undefined;
+    if (feed.items && feed.items.length > 0) {
+      // Find the most recent incident (first item)
+      const item = feed.items[0];
+      latestIncidentTitle = item.title || undefined;
+      latestIncidentSummary = (item.contentSnippet || item.content || '').slice(0, 200) || undefined;
+      latestIncidentAt = item.isoDate ? new Date(item.isoDate) : undefined;
+      // Heuristic for status
+      const text = `${item.title || ''} ${item.content || ''}`.toLowerCase();
+      if (text.includes('fully down') || text.includes('major outage')) {
+        status = 'fully_down';
+      } else if (text.includes('partial') || text.includes('degraded') || text.includes('incident')) {
+        status = 'partially_down';
+      }
+    }
+    // If any item in the feed is a major incident, escalate status
     for (const item of feed.items) {
       const text = `${item.title || ''} ${item.content || ''}`.toLowerCase();
       if (text.includes('fully down') || text.includes('major outage')) {
@@ -28,16 +51,21 @@ async function fetchCompanyStatusFromRSS(statusPageUrl: string): Promise<{ statu
         status = 'partially_down';
       }
     }
-    return { status, lastChecked: new Date() };
+    return { status, lastChecked: new Date(), latestIncidentTitle, latestIncidentSummary, latestIncidentAt };
   } catch (e) {
-    // If RSS fetch fails, mark as partially_down
     return { status: 'partially_down', lastChecked: new Date() };
   }
 }
 
 // Use dynamic import for node-fetch (ESM only)
 let fetch: typeof import('node-fetch').default;
-async function fetchCompanyStatusByScrape(statusPageUrl: string): Promise<{ status: string; lastChecked: Date }> {
+async function fetchCompanyStatusByScrape(statusPageUrl: string): Promise<{
+  status: string;
+  lastChecked: Date;
+  latestIncidentTitle?: string;
+  latestIncidentSummary?: string;
+  latestIncidentAt?: Date;
+}> {
   try {
     if (!fetch) {
       fetch = (await import('node-fetch')).default;
@@ -54,9 +82,10 @@ async function fetchCompanyStatusByScrape(statusPageUrl: string): Promise<{ stat
     } else if (text.includes('partial') || text.includes('degraded') || text.includes('incident')) {
       status = 'partially_down';
     }
-    return { status, lastChecked: new Date() };
+    // No incident details from scrape
+    return { status, lastChecked: new Date(), latestIncidentTitle: undefined, latestIncidentSummary: undefined, latestIncidentAt: undefined };
   } catch (e) {
-    return { status: 'partially_down', lastChecked: new Date() };
+    return { status: 'partially_down', lastChecked: new Date(), latestIncidentTitle: undefined, latestIncidentSummary: undefined, latestIncidentAt: undefined };
   }
 }
 
@@ -106,14 +135,20 @@ app.get('/api/companies', authenticateToken, async (req, res) => {
 
 // Refresh all company statuses (for cron job)
 app.post('/api/refresh-status', async (req, res) => {
-  // Optionally, add a secret or API key check here for security
   const companies = await prisma.company.findMany();
   let updated = 0;
   for (const company of companies) {
-    const { status, lastChecked } = await fetchCompanyStatusFromRSS(company.statusPageUrl);
+    const statusInfo = await fetchCompanyStatusFromRSS(company.statusPageUrl);
+    const updateData: any = {
+      status: statusInfo.status,
+      lastChecked: statusInfo.lastChecked,
+    };
+    if (statusInfo.latestIncidentTitle !== undefined) updateData.latestIncidentTitle = statusInfo.latestIncidentTitle;
+    if (statusInfo.latestIncidentSummary !== undefined) updateData.latestIncidentSummary = statusInfo.latestIncidentSummary;
+    if (statusInfo.latestIncidentAt !== undefined) updateData.latestIncidentAt = statusInfo.latestIncidentAt;
     await prisma.company.update({
       where: { id: company.id },
-      data: { status, lastChecked },
+      data: updateData,
     });
     updated++;
   }
@@ -130,15 +165,17 @@ app.post('/api/companies', authenticateToken, async (req, res) => {
   } else {
     statusInfo = await fetchCompanyStatusFromRSS(statusPageUrl);
   }
-  const { status, lastChecked } = statusInfo;
-  const company = {
+  const company: any = {
     id: uuidv4(),
     userId,
     name,
-    status,
+    status: statusInfo.status,
     statusPageUrl,
-    lastChecked,
+    lastChecked: statusInfo.lastChecked,
   };
+  if (statusInfo.latestIncidentTitle !== undefined) company.latestIncidentTitle = statusInfo.latestIncidentTitle;
+  if (statusInfo.latestIncidentSummary !== undefined) company.latestIncidentSummary = statusInfo.latestIncidentSummary;
+  if (statusInfo.latestIncidentAt !== undefined) company.latestIncidentAt = statusInfo.latestIncidentAt;
   const created = await addCompany(company);
   res.json(created);
 });

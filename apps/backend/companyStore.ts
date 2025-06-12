@@ -9,6 +9,9 @@ export interface Company {
   status: CompanyStatus;
   statusPageUrl: string;
   lastChecked: string;
+  latestIncidentTitle?: string;
+  latestIncidentSummary?: string;
+  latestIncidentAt?: string;
 }
 
 export async function getCompaniesByUser(userId: string) {
@@ -22,6 +25,9 @@ export async function addCompany(company: {
   status: string;
   statusPageUrl: string;
   lastChecked: Date;
+  latestIncidentTitle?: string;
+  latestIncidentSummary?: string;
+  latestIncidentAt?: Date;
 }) {
   return prisma.company.create({ data: company });
 }
