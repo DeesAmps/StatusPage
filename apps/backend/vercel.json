@@ -9,7 +9,7 @@
   "crons": [
     {
       "path": "/api/refresh-status",
-      "schedule": "*/5 * * * *"
+      "schedule": "0 1 * * *"
     }
   ]
 }
