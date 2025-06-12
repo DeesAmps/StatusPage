@@ -221,6 +221,8 @@ app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
   if (!company || company.userId !== userId) {
     return res.status(404).json({ error: 'Company not found' });
   }
+  // Delete all history records first to avoid FK constraint error
+  await prisma.companyHistory.deleteMany({ where: { companyId: id } });
   await prisma.company.delete({ where: { id } });
   res.json({ success: true });
 });
