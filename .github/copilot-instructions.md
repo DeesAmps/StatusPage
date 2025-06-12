@@ -17,7 +17,7 @@ This is a monorepo SaaS project for monitoring company status pages. The fronten
 - Keep dashboard interactions fast and user-friendly.
 
 ## Recommendations for Extension
-- Add status/incident history per company (timeline view, chart, or table).
+- Add status/incident history per company (timeline view, chart, or table). - complete 
 - Add notifications (email, web push) for status changes or new incidents.
 - Support team/multi-user accounts and shared dashboards.
 - Add company logo/icon support for better visual identification.
