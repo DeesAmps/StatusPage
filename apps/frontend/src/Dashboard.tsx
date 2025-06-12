@@ -126,6 +126,7 @@ export default function Dashboard({ token }: DashboardProps) {
       background: "linear-gradient(120deg, #23263a 60%, #181a20 100%)",
       minHeight: "100vh",
       transition: "background 0.3s",
+      alignSelf: "center",
     }}
   >
     <h2
