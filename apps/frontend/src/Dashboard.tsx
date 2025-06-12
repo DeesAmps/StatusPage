@@ -163,8 +163,8 @@ export default function Dashboard({ token }: DashboardProps) {
                 <td>
                   <button onClick={() => handleDelete(company.id)} style={{ background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginRight: 8 }}>Remove</button>
                 </td>
-                <td>
-                  <button onClick={() => toggleHistory(company.id)} style={{ background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer' }}>
+                <td style={{ minWidth: 180 }}>
+                  <button onClick={() => toggleHistory(company.id)} style={{ background: '#393c5a', color: '#a18aff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginBottom: 4 }}>
                     {historyOpen[company.id] ? 'Hide History' : 'Show History'}
                   </button>
                   {historyOpen[company.id] && (
