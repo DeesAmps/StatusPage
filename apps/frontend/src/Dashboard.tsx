@@ -139,14 +139,15 @@ export default function Dashboard({ token }: DashboardProps) {
         <button type="submit">Add</button>
       </form>
       {error && <div className="error">{error}</div>}
-      <ul className="company-list" style={{ padding: 0 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 16 }}>
+      <div className="dashboard-table-wrapper" style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 16, minWidth: 900 }}>
           <thead>
             <tr style={{ color: '#a18aff', borderBottom: '1px solid #393c5a' }}>
-              <th>Status</th>
+              <th style={{ textAlign: 'center' }}>Status</th>
               <th>Company</th>
               <th>Status Page</th>
               <th>Last Checked</th>
+              <th>Latest Incident</th>
               <th>Actions</th>
               <th>History</th>
             </tr>
@@ -160,6 +161,23 @@ export default function Dashboard({ token }: DashboardProps) {
                 <td>{company.name}</td>
                 <td><a href={company.statusPageUrl} target="_blank" rel="noopener noreferrer">Status Page</a></td>
                 <td style={{ fontSize: '0.8em', color: '#888' }}>{company.lastChecked}</td>
+                <td style={{ minWidth: 180 }}>
+                  {company.latestIncidentTitle ? (
+                    <div>
+                      <strong>{company.latestIncidentTitle}</strong>
+                      {company.latestIncidentAt && (
+                        <span style={{ color: '#888', marginLeft: 8 }}>
+                          ({new Date(company.latestIncidentAt).toLocaleString()})
+                        </span>
+                      )}
+                      {company.latestIncidentSummary && (
+                        <div style={{ color: '#e6e6f7', marginTop: 2 }}>{company.latestIncidentSummary}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ color: '#888' }}>No incidents</span>
+                  )}
+                </td>
                 <td>
                   <button onClick={() => handleDelete(company.id)} style={{ background: '#ff6b81', color: '#fff', border: 'none', borderRadius: 4, padding: '0.3em 0.7em', cursor: 'pointer', marginRight: 8 }}>Remove</button>
                 </td>
@@ -204,7 +222,7 @@ export default function Dashboard({ token }: DashboardProps) {
             ))}
           </tbody>
         </table>
-      </ul>
+      </div>
     </div>
   );
 }
