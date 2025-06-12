@@ -196,8 +196,19 @@ app.post('/api/companies', authenticateToken, async (req, res) => {
   res.json(created);
 });
 
+// CORS preflight for DELETE /api/companies/:id
+app.options('/api/companies/:id', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
+  res.status(200).end();
+});
+
 // Add endpoint to delete a company by id (must belong to user)
 app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
   const userId = (req as any).user.id;
   const { id } = req.params;
   // Only allow deleting companies owned by the user
@@ -207,14 +218,6 @@ app.delete('/api/companies/:id', authenticateToken, async (req, res) => {
   }
   await prisma.company.delete({ where: { id } });
   res.json({ success: true });
-});
-
-// CORS preflight for DELETE /api/companies/:id
-app.options('/api/companies/:id', (req, res) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'authorization, content-type');
-  res.status(200).end();
 });
 
 // Get status/incident history for a company (must belong to user)
